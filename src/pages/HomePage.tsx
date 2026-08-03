@@ -3,13 +3,17 @@ import { apiClient } from '../api/apiClient'
 import type { Product } from '../types/product'
 import { ProductCard } from '../components/ProductCard'
 import { ProductSkeleton } from '../components/ProductSkeleton'
+import { useCart } from '../context/CartContext'
 
 export const HomePage = () => {
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState<boolean>(true)
   const [error, setError] = useState<string | null>(null)
+  
+  // Достаем функцию добавления в корзину из глобального состояния
+  const { addToCart } = useCart()
 
-  // Новые состояния для управления витриной
+  // Состояния для управления витриной (поиск и сортировка)
   const [searchQuery, setSearchQuery] = useState('')
   const [sortOrder, setSortOrder] = useState<'default' | 'asc' | 'desc'>('default')
 
@@ -27,23 +31,19 @@ export const HomePage = () => {
   }, [])
 
   // Мемоизированная фильтрация и сортировка
-  // Пересчитывается ТОЛЬКО если изменились продукты, строка поиска или тип сортировки
   const filteredAndSortedProducts = useMemo(() => {
-    // Создаем копию массива, чтобы не мутировать оригинальный стейт (важное правило React!)
     let result = [...products]
 
-    // 1. Фильтрация по имени (без учета регистра)
     if (searchQuery.trim()) {
       result = result.filter(p => 
         p.name.toLowerCase().includes(searchQuery.toLowerCase())
       )
     }
 
-    // 2. Сортировка по цене
     if (sortOrder === 'asc') {
-      result.sort((a, b) => a.price - b.price) // По возрастанию
+      result.sort((a, b) => a.price - b.price) 
     } else if (sortOrder === 'desc') {
-      result.sort((a, b) => b.price - a.price) // По убыванию
+      result.sort((a, b) => b.price - a.price) 
     }
 
     return result
@@ -63,8 +63,6 @@ export const HomePage = () => {
 
         {/* Панель поиска и сортировки */}
         <div className="flex flex-col sm:flex-row gap-3">
-          
-          {/* Поле поиска */}
           <div className="relative">
             <input 
               type="text" 
@@ -73,7 +71,6 @@ export const HomePage = () => {
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full sm:w-64 bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-2.5 text-sm text-zinc-100 focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 transition-all placeholder:text-zinc-500"
             />
-            {/* Кнопка крестика для быстрой очистки поиска */}
             {searchQuery && (
               <button 
                 onClick={() => setSearchQuery('')}
@@ -85,7 +82,6 @@ export const HomePage = () => {
             )}
           </div>
 
-          {/* Выпадающий список сортировки */}
           <select 
             value={sortOrder}
             onChange={(e) => setSortOrder(e.target.value as 'default' | 'asc' | 'desc')}
@@ -95,22 +91,19 @@ export const HomePage = () => {
             <option value="asc">Сначала дешевые</option>
             <option value="desc">Сначала дорогие</option>
           </select>
-
         </div>
       </div>
 
-      {/* Состояния загрузки и ошибки */}
       {loading && <ProductSkeleton />}
+      
       {error && (
         <div className="bg-rose-950/40 border border-rose-800/80 text-rose-200 p-4 rounded-xl text-center my-8">
           {error}
         </div>
       )}
 
-      {/* Отрисовка товаров */}
       {!loading && !error && (
         <>
-          {/* Если после фильтрации массив пуст — показываем заглушку */}
           {filteredAndSortedProducts.length === 0 ? (
             <div className="text-center py-16 bg-zinc-900/40 rounded-2xl border border-zinc-800/80 border-dashed">
               <p className="text-zinc-400 text-lg">По вашему запросу ничего не найдено 🕵️‍♂️</p>
@@ -124,7 +117,11 @@ export const HomePage = () => {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {filteredAndSortedProducts.map((product) => (
-                <ProductCard key={product.id} product={product} />
+                <ProductCard 
+                  key={product.id} 
+                  product={product} 
+                  onAddToCart={addToCart} // <-- ВОТ ТУТ МЫ ПЕРЕДАЕМ ФУНКЦИЮ
+                />
               ))}
             </div>
           )}
