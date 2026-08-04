@@ -38,7 +38,7 @@ export const ProductCard = ({ product, onAddToCart }: ProductCardProps) => {
         <div>
           <span className="text-[10px] uppercase tracking-wider text-zinc-500 font-bold block">Цена</span>
           <span className="text-xl font-extrabold text-white">
-            {product.price.toLocaleString('ru-RU')} ₽
+            {product.price.toLocaleString('ru-RU')} ₸
           </span>
         </div>
         <button 
