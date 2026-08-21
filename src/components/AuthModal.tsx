@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
-import { createPortal } from 'react-dom' // <-- 1. Импортируем портал из React
+import { createPortal } from 'react-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { apiClient } from '../api/apiClient'
 
@@ -11,18 +12,23 @@ interface AuthModalProps {
 
 export const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
   const { login } = useAuth()
-  const [isLoginMode, setIsLoginMode] = useState(true)
+  const navigate = useNavigate()
+  const location = useLocation()
 
-  // Поля формы
+  const [isLoginMode, setIsLoginMode] = useState(true)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [name, setName] = useState('')
 
-  // Состояния загрузки и ошибок
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   if (!isOpen) return null
+
+  const toggleMode = () => {
+    setIsLoginMode(!isLoginMode)
+    setErrorMessage(null)
+  }
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
@@ -34,27 +40,26 @@ export const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
       ? { email, password } 
       : { email, password, name }
 
+    const destination = location.state?.from?.pathname || '/'
+
     try {
       const response = await apiClient.post<{ token: string; user: { id: string | number; email: string; name?: string } }>(endpoint, payload)
       login(response.data.token, response.data.user)
       onClose()
+      navigate(destination, { replace: true })
     } catch (error) {
       console.error('Ошибка авторизации:', error)
       const mockToken = 'mock-jwt-token-12345'
       const mockUser = { id: 1, email, name: name || email.split('@')[0] }
+      
       login(mockToken, mockUser)
       onClose()
+      navigate(destination, { replace: true })
     } finally {
       setIsSubmitting(false)
     }
   }
 
-  const toggleMode = () => {
-    setIsLoginMode(!isLoginMode)
-    setErrorMessage(null)
-  }
-
-  // 2. Оборачиваем весь возврат в createPortal и отправляем в document.body
   return createPortal(
     <div className="fixed inset-0 z-[100] overflow-y-auto bg-black/80 backdrop-blur-sm">
       <div className="flex min-h-full items-start justify-center p-4 py-12 md:py-24">
@@ -166,6 +171,6 @@ export const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
         </div>
       </div>
     </div>,
-    document.body // <-- Точка высадки портала
+    document.body
   )
 }

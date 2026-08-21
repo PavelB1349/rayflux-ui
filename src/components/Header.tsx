@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { Link, useLocation } from 'react-router-dom'
 import { useCart } from '../context/CartContext'
 import { useAuth } from '../context/AuthContext'
 import { AuthModal } from './AuthModal'
@@ -8,8 +8,16 @@ export const Header = () => {
   const { cartItems } = useCart()
   const { user, isAuthenticated, logout } = useAuth()
   const [isAuthOpen, setIsAuthOpen] = useState(false)
+  const location = useLocation()
 
   const totalCount = cartItems.reduce((sum, item) => sum + item.quantity, 0)
+
+  // Вот эта магия: если нас выкинули с флагом openAuth — открываем окно
+  useEffect(() => {
+    if (location.state?.openAuth && !isAuthenticated) {
+      setIsAuthOpen(true)
+    }
+  }, [location, isAuthenticated])
 
   return (
     <header className="sticky top-0 z-40 bg-zinc-950/80 backdrop-blur-md border-b border-zinc-800/80">
